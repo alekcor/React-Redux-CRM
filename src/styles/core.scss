@@ -1,0 +1,226 @@
+@import 'base';
+@import '~normalize.css/normalize';
+
+// Some best-practice CSS that's useful for most apps
+// Just remove them if they're not what you want
+html {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+.clearfix::after {
+    clear: both;
+    content: ".";
+    display: block;
+    font-size: 0;
+    height: 0;
+    visibility: hidden;
+    margin-bottom: 10px;
+    padding-top: 10px;
+}
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-font-smoothing: antialiased;
+    -o-font-smoothing: antialiased;
+    font-smoothing: antialiased;
+}
+button {
+    outline: none !important;
+}
+input {
+  border: 1px solid #ccc;
+  padding-left: 10px;
+  outline: none !important;
+}
+h2 {
+    margin-bottom: 30px;
+}
+.nav.navbar-nav li a.active {
+    color: #555;
+    background-color: #e7e7e7;
+}
+.tar {
+    text-align: right !important;
+}
+.mgb {
+    margin-bottom: 15px;
+}
+.not_hover {
+    background: #fff !important;
+    td {
+        border-top: none !important;
+        border-bottom: none !important;
+    }
+}
+.bg_w {
+    background: #fff !important;
+}
+.air {
+    height: 25px;
+}
+.quant_input {
+    width: 60px;
+    margin-top: 2px;
+    margin-bottom: 0 !important;
+    padding: 0;
+    text-align: center;
+    line-height: 1.5;
+
+}
+.stock_table {
+    td {
+        &:first-child {
+            text-align: center;
+            width: 50px;
+        }
+        &:last-child {
+            text-align: center;
+            width: 100px;  
+        }
+    }
+    th {
+        &.long {
+            width: 130px;
+        }
+        &.pointer {
+            cursor: pointer;
+        }
+        &:last-child {
+            text-align: center;
+        }
+        &:first-child {
+            text-align: center;
+        }
+    }
+    tbody>tr {
+        transition: all 0.25s;
+        &.pointer {
+            td {
+                cursor: pointer;
+            }
+        }
+        &.deleting {
+            background: #ffd9d9;
+            td {
+                opacity: 0.5
+            }
+        }
+        &.creating {
+            background: #d5ffd4;
+            td {
+                opacity: 0.5
+            }
+        }
+        &.updating {
+            background: #fff3d1;
+            td {
+                opacity: 0.5
+            }
+        }
+        .td_btn .btn {
+            opacity: 0.15;
+        }
+        &:hover {
+            .btn {
+                opacity: 1;
+            }
+        }
+    }
+    .caret {
+        opacity: 0;
+        &.visible {
+            opacity: 1;
+        }
+    }
+    &.table>tbody>tr>td {
+        vertical-align: middle;
+        padding: 5px 8px;
+        &.no_res {
+            text-align: center;
+        }
+    }
+    &.deals {
+        th {
+            &:last-child {
+                text-align: left;
+            }
+        }
+        td {
+            &:last-child {
+                text-align: left;
+                width: auto;  
+            }
+            &.text-center {
+                text-align: center;
+            }
+        }
+        &.table>tbody>tr>td {
+            padding: 8px;
+        }
+    }
+}
+.stock_filters {
+    margin-bottom: 20px;
+    a {
+        cursor: pointer;
+    }
+}
+.stock_controls {
+    position: relative;
+}
+.options_td {
+    width: 50px;
+}
+.popover-content {
+    min-width: 280px;
+}
+.remove_butt {
+    padding: 4px 6px 2px 7px;
+}
+.modal_form {
+  p {
+      margin-bottom: 4px;
+  }
+  input {
+      margin-bottom: 5px;
+  }
+  .ng-valid.ng-touched {
+    border-color: limegreen;
+  }
+}
+.modal-footer {
+    text-align: center;
+}
+.clear_search {
+    cursor: pointer;
+    font-size: 30px;
+    line-height: 24px;
+    &:hover {
+        color: red;
+    }
+}
+.search_field {
+    width: 300px;
+    margin-bottom: 20px;
+    margin-right: 5px;
+    height: 30px;
+}
+.panel_user {
+    width: 300px;
+}
+.login {
+    padding-top: 100px;
+}
+
