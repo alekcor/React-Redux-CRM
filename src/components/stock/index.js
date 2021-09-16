@@ -9,9 +9,7 @@ import * as Actions from '../../actions/stockActions'
 import Enum from '../../utils/Enum'
 
 class Stock extends Component {
-  componentWillMount() {
-    
-  }
+  
   clickCategory(e) {
     if (e.target.closest('.active')) return
     this.props.filterByCategory(e.target.innerText)
@@ -53,60 +51,53 @@ class Stock extends Component {
     }
   }
   render() {
-    let data = this.props
+    let props = this.props
     let content
     let items = []
     let categories = []
 
-    // data fetched
-    if (data.loaded) {
-      categories = [Enum.defaultCatStock].concat(
-        _.uniqBy(data.items, 'category').map((item) => item.category).sort()
+    categories = [Enum.defaultCatStock].concat(
+      _.uniqBy(props.items, 'category').map((item) => item.category).sort()
+    )
+    if (props.activeCategory !== Enum.defaultCatStock) {
+      items = _.filter(
+        props.items, 
+        item => item.category === props.activeCategory
       )
-      if (data.activeCategory !== Enum.defaultCatStock) {
-        items = _.filter(
-          data.items, 
-          item => item.category === data.activeCategory
-        )
-      } else {
-        items = data.items
-      }
-      if (data.searchQuery) {
-        items = _.filter(
-          items, 
-          item => item.name.toLowerCase().indexOf(data.searchQuery.trim()) !== -1
-        )
-      }
-      items = _.orderBy(items, [data.sortBy.code], [data.sortBy.type])
-      content = (
-        <div>
-          <Controls 
-            categories={ categories } 
-            clickCategory={ ::this.clickCategory }
-            activeCategory={ data.activeCategory }
-            changeSearch={ ::this.changeSearch }
-            openModal={ ::this.openModal }
-            clearSearch={ ::this.clearSearch }
-            query={ data.searchQuery }
-          />
-          <Table 
-            data={ data }
-            items= { items }
-            onSort={ ::this.onSort }
-            onDelete={ ::this.onDelete }
-            openModal={ ::this.openModal }
-          />
-        </div>
+    } else {
+      items = props.items
+    }
+    if (props.searchQuery) {
+      items = _.filter(
+        items, 
+        item => item.name.toLowerCase().indexOf(props.searchQuery.trim()) !== -1
       )
     }
+    items = _.orderBy(items, [props.sortBy.code], [props.sortBy.type])
+
     return (
       <div className='stock container'>
-        <h2 className="main_title">{ data.title }</h2>
-        { content }
+        <h2 className="main_title">{ props.title }</h2>
+        <Controls 
+          categories={ categories }
+          clickCategory={ ::this.clickCategory }
+          activeCategory={ props.activeCategory }
+          changeSearch={ ::this.changeSearch }
+          openModal={ ::this.openModal }
+          clearSearch={ ::this.clearSearch }
+          query={ props.searchQuery }
+        />
+        <Table 
+          data={ props }
+          items= { items }
+          onSort={ ::this.onSort }
+          onDelete={ ::this.onDelete }
+          openModal={ ::this.openModal }
+        />
         <StockModal 
-          params={ data.modal }
-          item={ data.modal.itemId ? 
-            data.items.filter(item => item._id === data.modal.itemId)[0] : null }
+          params={ props.modal }
+          item={ props.modal.itemId ? 
+            props.items.filter(item => item._id === props.modal.itemId)[0] : null }
           close={ ::this.closeModal }
           submit={ ::this.submitModal }
         />
@@ -122,9 +113,6 @@ const mapStateToProps = state => (
     searchQuery: state.stock.searchQuery,
     activeCategory: state.stock.activeCategory,
     modal: state.stock.modal,
-    loaded: state.stock.loaded,
-    loading: state.stock.loading,
-    error: state.stock.error,
     sortBy: state.stock.sortBy
   }
 )
