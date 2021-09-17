@@ -4,12 +4,10 @@ import { Modal } from 'react-bootstrap'
 class StockModal extends Component {
 	componentWillMount() {
 		this.fields = [
-      { text: 'Наименование', name: 'name' },
-      { text: 'Артикул', name: 'art' },
-      { text: 'Цена', name: 'price' },
-      { text: 'Категория', name: 'category' },
-      { text: 'Кол-во в наличии', name: 'quantity' },
-      { text: 'Заказано', name: 'ordered' }
+      { text: 'Краткое название', name: 'name' },
+      { text: 'Полное название', name: 'fullName' },
+      { text: 'Контакты', name: 'contact' },
+      { text: 'Контактные лица', name: 'person' }
     ]
 	}
 	render() {
@@ -18,23 +16,23 @@ class StockModal extends Component {
 
 		switch (props.params.mode) {
 			case 'create':
-				title = 'Создание нового товара'
+				title = 'Создание контрагента'
 				btnClass = 'btn-success'
-				btnText = 'Создать товар'
+				btnText = 'Создать контрагента'
 				break
 
 			case 'edit':
-				title = 'Редактирование товара'
+				title = 'Редактирование контрагента'
 				btnClass = 'btn-warning'
-				btnText = 'Сохранить товар'
+				btnText = 'Сохранить контрагента'
 				break
 		}
 		return (
-			<Modal bsSize='sm' show={ props.params.show } onHide={ props.close }>
+			<Modal show={ props.params.show } onHide={ props.close }>
         <Modal.Header closeButton>
           <h4 className='modal-title'>{ title }</h4>
         </Modal.Header>
-        <div className='modal_form'  >
+        <div className='modal_form long'  >
 	        <Modal.Body>
 	        	{
 	        		this.fields.map((field, i) => 
@@ -42,6 +40,7 @@ class StockModal extends Component {
 				        	<p className='title'>{ field.text }</p>
 								  <input type='text' className='input' 
 								  	name={ field.name }
+								  	data-mess={ field.mess }
 								  	onChange={ props.onChange }
 								  	value={ props.item[field.name] }
 								  	data-valid={ field.name }/>

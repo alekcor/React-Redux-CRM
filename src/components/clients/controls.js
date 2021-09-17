@@ -6,20 +6,9 @@ class Controls extends Component {
 		
 		return (
 			<div className="controls">
-				<ul className='nav nav-pills stock_filters'>
-					{
-						props.categories.map((item, i) =>
-				      <li key={ i } 
-				      	onClick={ props.clickCategory } 
-				      	className={ props.activeCategory === item ? 'active' : '' }>
-				      	<a>{ item }</a>
-				      </li>
-				    )	
-					}
-				</ul>
 				<span className="search_wrap">
 				  <input type="text" 
-				    placeholder="Искать по названию" 
+				    placeholder="Искать по полному названию" 
 				    className="search_field"
 				    onChange={ props.changeSearch }
 				    value={ props.query }
@@ -32,7 +21,7 @@ class Controls extends Component {
 			  {
 			  	props.access < 120 ?
 			  	<button className="btn btn-default add_butt pull-right" onClick={ props.openModal }>
-				    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Создать товар
+				    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Создать контрагента
 				  </button> 
 				  : null
 			  }

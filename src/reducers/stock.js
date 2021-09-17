@@ -1,59 +1,67 @@
 import Enum from '../utils/Enum'
+import _ from 'lodash'
 
 const initialState = {
-  title: 'Прайс-лист',
   items: [],
   searchQuery: '',
   activeCategory: Enum.defaultCatStock,
-  modal: { show: false, mode: 'create'},
+  modal: { 
+  	show: false, 
+  	mode: 'create',
+  	item: {
+  		name: '',
+  		art: '',
+  		price: '',
+  		category: '',
+  		quantity: 0,
+  		ordered: 0
+  	}
+  },
   sortBy: { code: 'price', type: 'asc' },
-  loading: false,
-  loaded: false
+  validateMess: {
+    show: false
+  }
 }
 
-const stock = (state = initialState, action) => {
+const stock = (state = _.cloneDeep(initialState), action) => {
 	let payload = action.payload
 
 	switch (action.type) {
-		case 'GET_STOCK_REQUEST':
-			return { ...state, loading: true }
+		case 'RESET_DATA':
+      return Object.assign({}, state, initialState)
 
 		case 'GET_STOCK_SUCCESS':
 			return { ...state,
-				items: payload,
-				loading: false,
-				loaded: true
+				items: payload
 			}
 
 		case 'GET_STOCK_FAIL':
-			return { ...state, error: true }
+			return { ...state}
 
 		case 'CREATE_ITEM_SUCCESS':
 			state.items.push(payload)
 			return { ...state, 
 				items: state.items.concat(),
-				modal: {
-					show: false,
-					mode: 'create'
+				modal: { ...state.modal,
+          show: false
 				}
 			}
 
 		case 'CREATE_ITEM_FAIL':
-			return { ...state}
+			return { ...state, error: payload }
 
 		case 'UPDATE_ITEM_SUCCESS':
 			let updated = state.items.filter(item => item._id !== payload._id)
 			updated.push({ ...payload, updating: true })
 			return { ...state, 
 				items: updated,
-				modal: {
-					show: false,
-					mode: 'edit'
+				modal: { ...state.modal,
+          show: false
 				}
 			}
 
 		case 'UPDATE_ITEM_FAIL':
-			return { ...state}
+			return { ...state, error: payload }
 
 		case 'STOP_FLASH_UPDATE_ITEM':
 			state.items.forEach(item => {
@@ -81,7 +89,7 @@ const stock = (state = initialState, action) => {
 			}
 
 		case 'DELETE_ITEM_FAIL':
-			return { ...state}
+			return { ...state, error: payload }
 
 		case 'FILTER_STOCK_BY_CATEGORY':
 			return { ...state, activeCategory: payload }
@@ -90,10 +98,32 @@ const stock = (state = initialState, action) => {
 			return { ...state, searchQuery: payload }
 
 		case 'SHOW_STOCK_MODAL':
-			return { ...state, modal: payload }
+			return { ...state,
+				modal: { 
+			  	show: payload.show, 
+			  	mode: payload.mode,
+			  	item: payload.item ? payload.item :
+			  		{ ...initialState.modal.item }
+			  },
+			  validateMess: {
+			    show: false
+			  }
+			}
+
+		case 'CHANGE_MODAL_ITEM':
+			return { ...state,
+				modal: { ...state.modal,
+          item: payload
+        }
+			}
 
 		case 'SORT_STOCK_DATA':
 			return { ...state, sortBy: payload }
+
+		case 'VALIDATE_ITEM':
+      return { ...state,
+        validateMess: payload
+      }
 
 		default:
       return state

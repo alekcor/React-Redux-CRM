@@ -2,28 +2,39 @@ import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import { Link, hashHistory } from 'react-router'
-
+import { Overlay, Popover } from 'react-bootstrap'
+import Validator from '../../utils/validator'
+import calculator from '../../utils/calculator'
+import validateConfig from '../../config/validate/deal'
+import accessConfig from '../../config/access/dealDetail'
 import Controls from './controls'
 import Table from './table'
 import DealModal from './modal'
-import * as Actions from '../../actions/dealDetailActions'
-import { createDeal, saveDeal } from '../../actions/dealsActions'
+import * as dealDetailActions from '../../actions/dealDetailActions'
+import { createDeal, saveDeal, deleteDeal } from '../../actions/dealsActions'
+import { updateItem } from '../../actions/stockActions'
 
 class Deal extends Component {
 	componentWillMount() {
-    let dealNumber = this.props.routeParams.id, deal
+    const dealNumber = this.props.routeParams.id
+    let dealData
+    this.validator = new Validator(this.props.validate, validateConfig)
     if (dealNumber) {
-      deal = _.cloneDeep(_.find(this.props.deals.items, deal => deal.number === +dealNumber))
+      this.originalDeal = _.find(this.props.deals.items, deal => deal.number === +dealNumber)
+      dealData = _.cloneDeep(this.originalDeal)
       let stock = this.props.stock.items
-      deal.items = deal.items.map(dealItem => {
+      dealData.items = dealData.items.map(dealItem => {
         return Object.assign({}, 
           _.find(stock, item => item._id === dealItem.id), 
           { price: dealItem.price, number: dealItem.number }
         )
       })
     }
-    this.props.loadDeal(deal ? deal : null)
-    this.props.setDealManager(deal ? deal.manager : this.props.user)
+    this.props.loadDeal(dealData ? dealData : null)
+    this.props.setDealManager(dealData ? dealData.manager : {
+      login: this.props.user.login,
+      name: this.props.user.name
+    })
   }
   componentDidUpdate() {
     if (this.props.redirect) {
@@ -37,7 +48,10 @@ class Deal extends Component {
   setDealManager(e) {
     let login = e.currentTarget.getAttribute('data-id')
     let manager = _.find(this.props.user.users, (manager) => manager.login === login)
-    this.props.setDealManager(manager)
+    this.props.setDealManager({
+      login: manager.login,
+      name: manager.name
+    })
   }
   openModal(e) {
     let mode = e.currentTarget.getAttribute('data-modal')
@@ -68,22 +82,20 @@ class Deal extends Component {
   clearSearchModal() {
     this.props.searchModal('')
   }
-  _findItem(collection, e) {
-    let id = e.currentTarget.getAttribute('data-id')
-    return _.find(collection, item => item._id === id)
-  }
   addItem(e) {
-    let stock = _.cloneDeep(this.props.stock.items)
-    let item = this._findItem(stock, e)
+    let id = e.currentTarget.getAttribute('data-id')
+    let item = _.find(_.cloneDeep(this.props.stock.items), item => item._id === id)
     let addedItem = _.find(this.props.items, i => i._id === item._id)
     if (addedItem) {
       let number = addedItem.number
       let id = addedItem._id
-      this.props.setItemNumber(++number, id)
+      if (item.quantity != number) ++number
+      this.props.setItemNumber(number, id)
     } else {
       item.number = 1
       this.props.addItem(item)
     }
+    this.closeModal()
     this.props.setDealSum()
   }
   removeItem(e) {
@@ -92,7 +104,11 @@ class Deal extends Component {
     this.props.setDealSum()
   }
   setDealClient(e) {
-    this.props.setDealClient(this._findItem(this.props.clients.items, e))
+    let id = e.currentTarget.getAttribute('data-id')
+    let client = _.find(this.props.clients.items, item => item._id === id)
+    this.props.setDealClient(client)
+    this.closeModal()
+    this.validator.validate({client: client})
   }
   setItemPrice(e) {
     let id = e.currentTarget.closest('[data-id]').getAttribute('data-id')
@@ -101,13 +117,22 @@ class Deal extends Component {
   }
   setItemNumber(e) {
     let id = e.currentTarget.closest('[data-id]').getAttribute('data-id')
-    this.props.setItemNumber(e.target.value, id)
+    let item = _.find(this.props.stock.items, item => item._id === id)
+    this.props.setItemNumber(e.target.value > 0 ? e.target.value : 0, id)
     this.props.setDealSum()
   }
   setDealNumber(e) {
     this.props.setDealNumber(e.target.value)
+    this.validator.validate({number: e.target.value})
   }
-  submitDeal(e) {
+  submitDeal() {
+    if (!this.validator.validate({number: this.props.number, client: this.props.client})) return
+    calculator(
+      this.props.dealDetail, 
+      this.originalDeal, 
+      this.props.stock.items, 
+      this.props.updateStockItem
+    )
     let deal = _.cloneDeep(this.props.dealDetail)
     deal.items = deal.items.map(item => {
       return {
@@ -122,20 +147,48 @@ class Deal extends Component {
       this.props.createDeal(deal)
     }
   }
+  deleteDeal() {
+    this.props.deleteDeal(this.originalDeal._id)
+  }
+  _getAccess(access) {
+    let k = 1
+    let state = this.originalDeal ? this.originalDeal.state : 'new'
+    switch (state) {
+      case 'approved':
+        k = 2
+        break
+      case 'closed':
+        k = 3
+        break
+      case 'canceled':
+        k = 4
+        break
+    }
+    if (access === 120) {
+      if (this.originalDeal && this.originalDeal.manager.login !== this.props.user.login) {
+        access = 500
+      }
+    }
+    return access * k
+  }
   render() {
     let props = this.props
     let id = props.routeParams.id
+    let title = id ? `Редактирование сделки №${id}` : 'Создание новой сделки'
     let btnInfo = {
       cssClass: id ? 'btn-warning' : 'btn-success',
       text: id ? 'Сохранить сделку' : 'Создать сделку'
     }
-
+    let access = accessConfig[props.user.access]
+    let accessComponent = this._getAccess(access.component)
+    
     return (
       <div className='deal_detail container'>
-        <h3>{ props.title }</h3>
+        <h3>{ title }</h3>
         <hr/>
         <div className='modal_form clearfix'>
           <Controls 
+            access={ this._getAccess(access.controls) }
             dealState={ props.state }
             clickStateBtn={ ::this.setDealState }
             managerList={ props.user.users }
@@ -148,6 +201,7 @@ class Deal extends Component {
           />
           <div className='air'></div>
           <Table 
+            access={ this._getAccess(access.table) }
             items={ props.items }
             openModal={ ::this.openModal }
             removeItem={ ::this.removeItem }
@@ -156,9 +210,16 @@ class Deal extends Component {
             sum={ props.sum }
           />
           <div className='air'></div>
-          <button className={'btn btn-lg pull-right ' + btnInfo.cssClass} onClick={ ::this.submitDeal }>
+          {
+            accessComponent === 400 ?
+            <button className={'btn btn-lg pull-right btn-danger'} onClick={ ::this.deleteDeal }>
+            Удалить сделку <span className='glyphicon glyphicon-trash'></span>
+            </button>
+            : accessComponent < 330 ?
+            <button className={'btn btn-lg pull-right ' + btnInfo.cssClass} onClick={ ::this.submitDeal }>
             { btnInfo.text } <span className='glyphicon glyphicon-cloud-upload'></span>
-          </button>
+            </button> : null
+          }
           <Link to='/deals' className='btn btn-lg btn-default pull-left'>
             <span className='glyphicon glyphicon-arrow-left'></span> Отмена
           </Link>
@@ -174,6 +235,17 @@ class Deal extends Component {
           onSetClient={ ::this.setDealClient }
           close={ ::this.closeModal }
         />
+        <Overlay
+          show={ props.validateMess.show }
+          placement={ props.validateMess.side || 'top' }
+          container={ document.querySelector('[data-valid-wrap="'+props.validateMess.name+'"]') }
+          target={ document.querySelector('[data-valid="'+props.validateMess.name+'"]') }>
+          <Popover 
+            id="popover-contained" 
+            title={ props.validateMess.title }>
+            { props.validateMess.message }
+          </Popover>
+        </Overlay>
       </div>
     )
   }
@@ -191,6 +263,7 @@ const mapStateToProps = (state) => (
     sum: state.dealDetail.sum,
     number: state.dealDetail.number,
     redirect: state.dealDetail.redirect,
+    validateMess: state.dealDetail.validateMess,
     dealDetail: state.dealDetail,
     user: state.user,
     stock: state.stock,
@@ -201,21 +274,24 @@ const mapStateToProps = (state) => (
 
 const mapDispatchToProps = dispatch => (
   {
-    loadDeal:         bindActionCreators(Actions.loadDeal, dispatch),
-    setDealState:     bindActionCreators(Actions.setDealState, dispatch),
-    setDealManager:   bindActionCreators(Actions.setDealManager, dispatch),
-    showModal:        bindActionCreators(Actions.showModal, dispatch),
-    sortModal:        bindActionCreators(Actions.sortModal, dispatch),
-    searchModal:      bindActionCreators(Actions.searchModal, dispatch),
-    addItem:          bindActionCreators(Actions.addItem, dispatch),
-    removeItem:       bindActionCreators(Actions.removeItem, dispatch),
-    setDealClient:    bindActionCreators(Actions.setDealClient, dispatch),
-    setItemPrice:     bindActionCreators(Actions.setItemPrice, dispatch),
-    setItemNumber:    bindActionCreators(Actions.setItemNumber, dispatch),
-    setDealNumber:    bindActionCreators(Actions.setDealNumber, dispatch),
-    setDealSum:       bindActionCreators(Actions.setDealSum, dispatch),
+    loadDeal:         bindActionCreators(dealDetailActions.loadDeal, dispatch),
+    setDealState:     bindActionCreators(dealDetailActions.setDealState, dispatch),
+    setDealManager:   bindActionCreators(dealDetailActions.setDealManager, dispatch),
+    showModal:        bindActionCreators(dealDetailActions.showModal, dispatch),
+    sortModal:        bindActionCreators(dealDetailActions.sortModal, dispatch),
+    searchModal:      bindActionCreators(dealDetailActions.searchModal, dispatch),
+    addItem:          bindActionCreators(dealDetailActions.addItem, dispatch),
+    removeItem:       bindActionCreators(dealDetailActions.removeItem, dispatch),
+    setDealClient:    bindActionCreators(dealDetailActions.setDealClient, dispatch),
+    setItemPrice:     bindActionCreators(dealDetailActions.setItemPrice, dispatch),
+    setItemNumber:    bindActionCreators(dealDetailActions.setItemNumber, dispatch),
+    setDealNumber:    bindActionCreators(dealDetailActions.setDealNumber, dispatch),
+    setDealSum:       bindActionCreators(dealDetailActions.setDealSum, dispatch),
+    validate:         bindActionCreators(dealDetailActions.validate, dispatch),
     createDeal:       bindActionCreators(createDeal, dispatch),
     saveDeal:         bindActionCreators(saveDeal, dispatch),
+    deleteDeal:       bindActionCreators(deleteDeal, dispatch),
+    updateStockItem:  bindActionCreators(updateItem, dispatch)
   }
 )
 

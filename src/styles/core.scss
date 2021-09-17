@@ -51,6 +51,18 @@ h2 {
         font-size: 35px;
     }
 }
+.alert {
+    margin-bottom: 0;
+}
+.popover {
+    z-index: 60;
+}
+.popover-title {
+    font-weight: 700;
+}
+.pos {
+    position: relative;
+}
 .nav.navbar-nav li a.active {
     color: #555;
     background-color: #e7e7e7;
@@ -72,7 +84,7 @@ h2 {
     background: #fff !important;
 }
 .air {
-    height: 25px;
+    padding-bottom: 25px;
 }
 .quant_input {
     width: 60px;
@@ -83,13 +95,25 @@ h2 {
     line-height: 1.5;
 
 }
+.badges {
+    margin: 2px 0 0 10px;
+    .btn {
+        margin-right: 5px;
+        .badge {
+            font-weight: 100;
+        }
+        &:hover {
+            text-decoration: line-through;
+        }
+    }
+}
 .stock_table {
     td {
         &:first-child {
             text-align: center;
             width: 50px;
         }
-        &:last-child {
+        &.td_btn {
             text-align: center;
             width: 100px;  
         }
@@ -101,7 +125,7 @@ h2 {
         &.pointer {
             cursor: pointer;
         }
-        &:last-child {
+        &.th_btn {
             text-align: center;
         }
         &:first-child {
@@ -109,11 +133,14 @@ h2 {
         }
     }
     tbody>tr {
-        transition: all 0.25s;
         &.pointer {
             td {
                 cursor: pointer;
             }
+        }
+        &.disabled {
+            opacity: 0.4;
+            background: #eee;
         }
         &.deleting {
             background: #ffd9d9;
@@ -197,11 +224,23 @@ h2 {
   p {
       margin-bottom: 4px;
   }
-  input {
+  input[type="text"] {
       margin-bottom: 5px;
+      height: 25px;
+      &:focus {
+        border-color: #777;
+      }
   }
   .ng-valid.ng-touched {
     border-color: limegreen;
+  }
+  &.long {
+    input[type="text"] {
+        width: 70%;
+    }
+  }
+  .input_field {
+    margin-bottom: 6px;
   }
 }
 .modal-footer {

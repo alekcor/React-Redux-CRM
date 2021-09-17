@@ -4,7 +4,9 @@ import { Provider } from 'react-redux'
 import { applyMiddleware, compose, createStore } from 'redux'
 import rootReducer from './reducers'
 import thunk from 'redux-thunk'
-import { Router, Route, hashHistory, IndexRoute } from 'react-router'
+import socketMiddleware from './utils/socketMiddleware'
+import io from 'socket.io-client'
+import { Router, Route, hashHistory, IndexRedirect } from 'react-router'
 import { syncHistoryWithStore } from 'react-router-redux'
 import _ from 'lodash'
 
@@ -23,7 +25,7 @@ const initialState = {
 
 }
 
-const middleware = [thunk]
+const middleware = [thunk, socketMiddleware(io.connect())]
 
 const enhancers = []
 
@@ -58,12 +60,13 @@ ReactDOM.render(
   <Provider store={store}>
     <Router history={history}>
     	<Route path="/" component={App}>
-        <IndexRoute component={Home}/>
+        <IndexRedirect to='stock'/>
       	<Route path="/stock" component={Stock}/>
       	<Route path="/deals" component={Deals}/>
+        <Route path="/deals/user/:login" component={Deals}/>
         <Route path="/deals/create" component={DealDetail}/>
         <Route path="/deals/edit/:id" component={DealDetail}/>
-      	<Route path="/partners" component={Clients}/>
+      	<Route path="/clients" component={Clients}/>
       	<Route path="/user" component={User}/>
       </Route>
       <Route path="/login" component={Login}/>

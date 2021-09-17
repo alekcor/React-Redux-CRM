@@ -4,10 +4,13 @@ const app = require('../server/main')
 const debug = require('debug')('app:bin:dev-server')
 const bodyParser= require('body-parser')
 
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 const mongoose = require('mongoose')
 const crypto = require('crypto')
 const session = require('express-session')
 const MongoStore = require('connect-mongo')(session)
+
 
 const MONGO_URL = 'mongodb://dbuser:password@ds035766.mlab.com:35766/crmdb'
 
@@ -21,6 +24,24 @@ app.use(session({
     })
 }))
 
+const connections = [];
+
+io.on('connection', function(socket){
+  connections.push(socket);
+  console.log('a user connected');
+  socket.on('change:data', function(data){
+    connections.forEach(function(connectedSocket) {
+      if (connectedSocket !== socket) {
+        connectedSocket.emit('change:data', data);
+      }
+    })
+    
+  });
+  socket.on('disconnect', function(){
+    console.log('user disconnected');
+  });
+});
+
 mongoose.Promise = global.Promise;
 mongoose.connect(MONGO_URL);
 var db = mongoose.connection;
@@ -29,7 +50,7 @@ db.on('error', function (err) {
 })
 db.once('open', function callback () {
     console.log("Connected to DB!")
-    app.listen(project.server_port)
+    http.listen(project.server_port)
 	debug(`Server is now running at http://localhost:${project.server_port}.`)
 })
 
@@ -55,8 +76,8 @@ var Item = new Schema({
 });
 
 var Client = new Schema({
-    name: String,
-    fullname: String,
+    name: { type: String, required: true},
+    fullName: { type: String, required: true},
     contact: String,
     person: String
 })
@@ -85,7 +106,7 @@ app.post('/auth', function(req, res, next) {
     if (req.session.user) {
         return res.send({ status: 'OK', user:req.session.user });
     } else {
-        return res.send('noAuth');
+        return res.send({ auth: false });
     }
 })
 
@@ -112,7 +133,7 @@ app.post('/login', function(req, res, next) {
 app.post('/logout', function(req, res, next) {
     if (req.session.user) {
         delete req.session.user;
-        res.send('noAuth');
+        res.send({ auth: false });
     }
 });
 
@@ -132,6 +153,10 @@ app.get('/users/read', function (req, res) {
 });
 
 function readHandler(Model,req,res) {
+    if (!req.session.user) {
+        res.statusCode = 403;
+        return res.send({ error: 'Session is expired' });
+    }
     return Model.find(function (err,items) {
         if (!err) {
             return res.send(items);
@@ -151,9 +176,11 @@ app.post('/stock/create', function (req, res) {
         name: req.body.name,
         price: req.body.price,
         category: req.body.category,
+        quantity: req.body.quantity,
+        ordered: req.body.ordered
     });
 
-    createHandler(item,res,'item');
+    createHandler(item,res,req,'item');
 });
 app.post('/deals/create', function (req, res) {
     var deal = new DealModel({
@@ -165,18 +192,17 @@ app.post('/deals/create', function (req, res) {
         state: req.body.state
     });
 
-   createHandler(deal,res,'deal');
+   createHandler(deal,res,req,'deal');
 });
 app.post('/clients/create', function (req, res) {
-    var Client = new ClientModel({
+    var client = new ClientModel({
         name: req.body.name,
-        fullname: req.body.fullname,
+        fullName: req.body.fullName,
         contact: req.body.contact,
-        person: req.body.person,
-        type: req.body.type,
+        person: req.body.person
     });
 
-    createHandler(client,res,'client');
+    createHandler(client,res,req,'client');
 });
 app.post('/users/create', function (req, res) {
     var user = new UserModel({
@@ -186,10 +212,14 @@ app.post('/users/create', function (req, res) {
         access: req.body.access
     });
 
-    createHandler(user,res,'user');
+    createHandler(user,res,req,'user');
 });
 
-function createHandler(item,res,str) {
+function createHandler(item, res, req, str) {
+    if (!req.session.user) {
+        res.statusCode = 403;
+        return res.send({ error: 'Session is expired' });
+    }
     item.save(function (err) {
         if (!err) {
             console.log(str+" created");
@@ -210,13 +240,17 @@ app.put('/deals/update/:id', function (req, res){
     updateHandler(DealModel,req,res,'deal');
 });
 app.put('/clients/update/:id', function (req, res){
-    updateHandler(clientModel,req,res,'client');
+    updateHandler(ClientModel,req,res,'client');
 });
 app.put('/users/update/:id', function (req, res){
     updateHandler(UserModel,req,res,'user');
 });
 
-function updateHandler(Model,req,res,str) {
+function updateHandler(Model, req, res, str) {
+    if (!req.session.user) {
+        res.statusCode = 403;
+        return res.send({ error: 'Session is expired' });
+    }
     return Model.findById(req.params.id, function (err, item) {
         if(!item) {
             res.statusCode = 404;
@@ -252,7 +286,11 @@ app.delete('/users/delete/:id', function (req, res){
     deleteHandler(UserModel,req,res,'user');
 });
 
-function deleteHandler(Model,req,res,str) {
+function deleteHandler(Model, req, res, str) {
+    if (!req.session.user) {
+        res.statusCode = 403;
+        return res.send({ error: 'Session is expired' });
+    }
     return Model.findById(req.params.id, function (err, item) {
         if(!item) {
             res.statusCode = 404;

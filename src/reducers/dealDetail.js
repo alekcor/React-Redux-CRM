@@ -1,7 +1,7 @@
 import Enum from '../utils/Enum'
+import _ from 'lodash'
 
 const initialState = {
-  title: 'Создание новой сделки',
   state: 'new',
   manager: false,
   modal: { 
@@ -14,16 +14,18 @@ const initialState = {
   sum: 0,
   client: false,
   number: '',
-  redirect: false
+  redirect: false,
+  validateMess: {
+    show: false
+  }
 }
 
-const dealDetail = (state = initialState, action) => {
+const dealDetail = (state = _.cloneDeep(initialState), action) => {
   let payload = action.payload
 
   switch (action.type) {
-
     case 'LOAD_DEAL_DETAIL':
-      return Object.assign({}, state, payload ? payload : initialState)
+      return Object.assign({}, state, payload ? payload : _.cloneDeep(initialState))
 
     case 'SET_DEAL_STATE':
       return { ...state, 
@@ -55,10 +57,7 @@ const dealDetail = (state = initialState, action) => {
     case 'ADD_ITEM_TO_DEAL':
       state.items.push(payload)
       return { ...state,
-        items: state.items.concat(),
-        modal: { ...state.modal,
-          show: false
-        }
+        items: state.items.concat()
       }
 
     case 'REMOVE_ITEM_FROM_DEAL':
@@ -83,18 +82,12 @@ const dealDetail = (state = initialState, action) => {
         }
       })
       return { ...state,
-        items: state.items.concat(),
-        modal: { ...state.modal,
-          show: false
-        }
+        items: state.items.concat()
       }
 
     case 'SET_CLIENT_TO_DEAL':
       return { ...state,
-        client: payload,
-        modal: { ...state.modal,
-          show: false
-        }
+        client: payload
       }
 
     case 'SET_SUM_DEAL':
@@ -121,9 +114,19 @@ const dealDetail = (state = initialState, action) => {
         redirect: true
       }
 
+    case 'DELETE_DEAL_SUCCESS':
+      return { ...state,
+        redirect: true
+      }
+
     case 'RESET_REDIRECT':
       return { ...state,
         redirect: false
+      }
+
+    case 'VALIDATE_DEAL':
+      return { ...state,
+        validateMess: payload
       }
 
     default:

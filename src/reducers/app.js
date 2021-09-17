@@ -1,15 +1,19 @@
+import _ from 'lodash'
 
 const initialState = {
   isAuth: false,
   loading: false,
   loaded: false,
-  toLogin: false
+  toLogin: false,
+  showMess: false
 }
 
-const app = (state = initialState, action) => {
+const app = (state = _.cloneDeep(initialState), action) => {
   let payload = action.payload
 
   switch (action.type) {
+    case 'RESET_DATA':
+      return Object.assign({}, state, initialState)
 
     case 'LOGIN_SUCCESS':
       return { ...state,
@@ -56,6 +60,16 @@ const app = (state = initialState, action) => {
       return { ...state,
         isAuth: false,
         toLogin: true
+      }
+
+    case 'EXTERNAL_CHANGED_APP_DATA':
+      return { ...state,
+        showMess: true
+      }
+
+    case 'HIDE_APP_MESS':
+      return { ...state,
+        showMess: false
       }
 
     default:
